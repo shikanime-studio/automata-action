@@ -1,0 +1,86 @@
+name: automata-action
+author: Shikanime Studio
+branding:
+  icon: globe
+  color: gray-dark
+description: Update Nix flake and land changes
+inputs:
+  commit-message:
+    description: Commit message
+    required: false
+    default: Update Flake
+  extra-args:
+    description: Extra arguments to pass to `nix run`
+    required: false
+    default: ""
+  flake-url:
+    description: Nix flake URL or path to develop from
+    required: false
+    default: nixpkgs#sapling
+  github-token:
+    description: The GitHub Token
+    required: false
+    default: ${{ github.token }}
+  ghstack-username:
+    description: Sapling ghstack username
+    required: false
+    default: github-actions
+  gpg-passphrase:
+    description: GPG Private Key Passphrase for the GPG Private Key with which to sign the commits in the PR to be created
+    default: ""
+  gpg-private-key:
+    description: GPG Private Key with which to sign the commits in the PR to be created
+    default: ""
+  method:
+    description: Publication method, one of 'pr' or 'ghstack'
+    required: false
+    default: ghstack
+  sign-commits:
+    description: Set to true if the action should sign the commit with GPG
+    default: "false"
+  username:
+    description: The username to use
+    default: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
+runs:
+  using: composite
+  steps:
+    - id: importGPG
+      if: ${{ inputs.sign-commits == 'true' }}
+      uses: crazy-max/ghaction-import-gpg@v6
+      with:
+        gpg_private_key: ${{ inputs.gpg-private-key }}
+        passphrase: ${{ inputs.gpg-passphrase }}
+    - run: |
+        nix flake update \
+          --accept-flake-config
+        nix run "${{ inputs.flake-url }}" ${{ inputs.extra-args }} -- config \
+          --local ui.username="${{ inputs.username }}"
+      shell: bash
+    - if: ${{ inputs.method == 'ghstack' }}
+      run: |
+        nix run "${{ inputs.flake-url }}" ${{ inputs.extra-args }} -- config \
+          --local ghstack.github_username="${{ inputs.ghstack-username }}"
+    - if: inputs.sign-commits == 'true'
+      run: |
+        nix run "${{ inputs.flake-url }}" ${{ inputs.extra-args }} -- config \
+          --local commit.gpgsign true \
+          --local gpg.key "${{ steps.importGPG.outputs.keyid }}"
+      shell: bash
+    - run: |
+        nix run "${{ inputs.flake-url }}" ${{ inputs.extra-args }} -- ci \
+          --message "${{ inputs.commit-message }}"
+      shell: bash
+    - env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+      if: inputs.method == 'ghstack'
+      run: |
+        nix run "${{ inputs.flake-url }}" ${{ inputs.extra-args }} -- ghstack \
+          submit
+      shell: bash
+    - env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+      if: inputs.method == 'pr'
+      run: |
+        nix run "${{ inputs.flake-url }}" ${{ inputs.extra-args }} -- pr \
+          submit
+      shell: bash

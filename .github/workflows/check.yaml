@@ -1,0 +1,21 @@
+name: Check
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+      - gh/*/*/base
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shikanime-studio/setup-nix-action@v1
+      - name: Check Nix Flake
+        run: |
+          nix flake check \
+            --accept-flake-config \
+            --all-systems \
+            --no-pure-eval

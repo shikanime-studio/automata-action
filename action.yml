@@ -37,7 +37,7 @@ inputs:
     default: ghstack
   sign-commits:
     description: Set to true if the action should sign the commit with GPG
-    default: "false"
+    default: false
   username:
     description: The username to use
     default: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
@@ -45,7 +45,7 @@ runs:
   using: composite
   steps:
     - id: importGPG
-      if: ${{ inputs.sign-commits == 'true' }}
+      if: ${{ inputs.sign-commits }}
       uses: crazy-max/ghaction-import-gpg@v6
       with:
         gpg_private_key: ${{ inputs.gpg-private-key }}
@@ -61,7 +61,7 @@ runs:
         nix run "${{ inputs.flake-url }}" ${{ inputs.extra-args }} -- config \
           --local ghstack.github_username="${{ inputs.ghstack-username }}"
       shell: bash
-    - if: inputs.sign-commits == 'true'
+    - if: ${{ inputs.sign-commits }}
       run: |
         nix run "${{ inputs.flake-url }}" ${{ inputs.extra-args }} -- config \
           --local commit.gpgsign true \

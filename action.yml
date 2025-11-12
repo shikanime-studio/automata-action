@@ -13,10 +13,6 @@ inputs:
     description: Extra arguments to pass to `nix run`
     required: false
     default: ""
-  flake-url:
-    description: Nix flake URL or path to develop from
-    required: false
-    default: nixpkgs#sapling
   github-token:
     description: The GitHub Token
     required: false
@@ -35,6 +31,10 @@ inputs:
     description: Publication method, one of 'pr' or 'ghstack'
     required: false
     default: ghstack
+  registry:
+    description: Nix registry to use
+    required: false
+    default: nixpkgs
   sign-commits:
     description: Set to true if the action should sign the commit with GPG
     default: false
@@ -53,35 +53,35 @@ runs:
     - run: |
         nix flake update \
           --accept-flake-config
-        nix run "${{ inputs.flake-url }}" ${{ inputs.extra-args }} -- config \
+        nix run "${{ inputs.flake-url }}#sapling" ${{ inputs.extra-args }} -- config \
           --local ui.username="${{ inputs.username }}"
       shell: bash
     - if: ${{ inputs.method == 'ghstack' }}
       run: |
-        nix run "${{ inputs.flake-url }}" ${{ inputs.extra-args }} -- config \
+        nix run "${{ inputs.flake-url }}#sapling" ${{ inputs.extra-args }} -- config \
           --local ghstack.github_username="${{ inputs.ghstack-username }}"
       shell: bash
     - if: ${{ inputs.sign-commits }}
       run: |
-        nix run "${{ inputs.flake-url }}" ${{ inputs.extra-args }} -- config \
+        nix run "${{ inputs.flake-url }}#sapling" ${{ inputs.extra-args }} -- config \
           --local commit.gpgsign true \
           --local gpg.key "${{ steps.importGPG.outputs.keyid }}"
       shell: bash
     - run: |
-        nix run "${{ inputs.flake-url }}" ${{ inputs.extra-args }} -- ci \
+        nix run "${{ inputs.flake-url }}#sapling" ${{ inputs.extra-args }} -- ci \
           --message "${{ inputs.commit-message }}"
       shell: bash
     - env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
       if: inputs.method == 'ghstack'
       run: |
-        nix run "${{ inputs.flake-url }}" ${{ inputs.extra-args }} -- ghstack \
+        nix run "${{ inputs.flake-url }}#ghstack" ${{ inputs.extra-args }} -- \
           submit
       shell: bash
     - env:
         GITHUB_TOKEN: ${{ inputs.github-token }}
       if: inputs.method == 'pr'
       run: |
-        nix run "${{ inputs.flake-url }}" ${{ inputs.extra-args }} -- pr \
+        nix run "${{ inputs.flake-url }}#sapling" ${{ inputs.extra-args }} -- pr \
           submit
       shell: bash

@@ -61,11 +61,11 @@
               pkgs.sapling
             ];
             treefmt = {
-            enable = true;
-            config = {
-              enableDefaultExcludes = true;
-              programs.prettier.enable = true;
-            };
+              enable = true;
+              config = {
+                enableDefaultExcludes = true;
+                programs.prettier.enable = true;
+              };
             };
           };
         };
